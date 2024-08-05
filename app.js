@@ -23,6 +23,11 @@ const sheets = google.sheets({ version: "v4", auth });
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// Render search page
+app.get("/", (req, res) => {
+  res.render("search");
+});
+
 // Search route
 app.get("/search", async (req, res) => {
   const query = req.query.query || "";
