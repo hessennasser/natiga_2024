@@ -19,20 +19,13 @@ const auth = new google.auth.JWT(
 
 const sheets = google.sheets({ version: "v4", auth });
 
-// Set up Express to use EJS for views
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
+// Set up Express
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Render search page
-app.get("/", (req, res) => {
-  res.render("search");
-});
-
 // Search route
-app.post("/search", async (req, res) => {
-  const query = req.body.query || "";
+app.get("/search", async (req, res) => {
+  const query = req.query.query || "";
   try {
     // Read data from the Google Sheets
     const spreadsheetId = "1-mICanz5G0t1CziTSEQ1Q4L-9F1ff7vn"; // Your spreadsheet ID
@@ -44,8 +37,8 @@ app.post("/search", async (req, res) => {
     });
 
     const rows = response.data.values;
-    if (!rows.length) {
-      res.render("results", { results: [], query });
+    if (!rows || !rows.length) {
+      res.send("لا توجد بيانات.");
       return;
     }
 
@@ -54,10 +47,13 @@ app.post("/search", async (req, res) => {
       row.some((cell) => cell.toLowerCase().includes(query.toLowerCase()))
     );
 
-    res.render("results", { results, query });
+    res.json(results);
   } catch (error) {
-    console.error("Error searching for data:", error);
-    res.status(500).send("Error searching for data");
+    console.error(
+      "Error searching for data:",
+      error.response ? error.response.data : error
+    );
+    res.status(500).send("خطأ في البحث عن البيانات");
   }
 });
 
