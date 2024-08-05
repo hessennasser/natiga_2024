@@ -35,16 +35,30 @@
       text-align: center;
     }
 
-    .result-item {
-      border: 1px solid #ddd;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 5px;
-      background: #f9f9f9;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-block: 20px;
     }
 
-    .result-item div {
-      margin-bottom: 5px;
+    table,
+    th,
+    td {
+      border: 1px solid #ddd;
+    }
+
+    th,
+    td {
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      border-color: 20px solid #ddd;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
     }
 
     .container a {
@@ -95,24 +109,38 @@
     <h1>نتيجة البحث</h1>
     <a href="/">ابحث تاني</a>
     <% if (results.length> 0) { %>
-      <ul>
-        <% results.forEach(result=> { %>
-          <li class="result-item">
-            <div><strong>رقم الجلوس:</strong>
-              <%= result['رقم الجلوس'] %>
-            </div>
-            <div><strong>الاسم:</strong>
-              <%= result['الاسم'] %>
-            </div>
-            <div><strong>الدرجة:</strong>
-              <%= result['الدرجة'] %>
-            </div>
-            <div><strong>حالة الطالب:</strong>
-              <%= result['student_case_desc'] %>
-            </div>
-          </li>
-          <% }) %>
-      </ul>
+      <table>
+        <thead>
+          <tr>
+            <th>رقم الجلوس</th>
+            <th>الاسم</th>
+            <th>الدرجة</th>
+            <th>النسبة من 410</th>
+            <th>حالة الطالب</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% results.forEach(result=> { %>
+            <tr>
+              <td>
+                <%= result['رقم الجلوس'] %>
+              </td>
+              <td>
+                <%= result['الاسم'] %>
+              </td>
+              <td>
+                <%= result['الدرجة'] %>
+              </td>
+              <td>
+                <%= (result['الدرجة'] / 410 * 100).toFixed(2) + '%' %>
+              </td>
+              <td>
+                <%= result['student_case_desc'] %>
+              </td>
+            </tr>
+            <% }) %>
+        </tbody>
+      </table>
       <% } else { %>
         <div class="no-results">لا توجد نتائج مطابقة للبحث.</div>
         <% } %>

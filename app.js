@@ -1,7 +1,7 @@
 const express = require("express");
-const { google } = require("googleapis");
 const path = require("path");
 const fs = require("fs");
+const xlsx = require("xlsx");
 
 const app = express();
 app.set("view engine", "ejs");
@@ -9,58 +9,45 @@ app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Google Drive API configuration
-const credentials = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "service_account.json"))
-);
-const auth = new google.auth.JWT(
-  credentials.client_email,
-  null,
-  credentials.private_key,
-  ["https://www.googleapis.com/auth/spreadsheets.readonly"]
-);
+// Path to the local Excel file
+const excelFilePath = path.join(__dirname, "data.xlsx");
 
-const sheets = google.sheets({ version: "v4", auth });
-
-// Your Google Sheets file ID and range
-const spreadsheetId = "1-mICanz5G0t1CziTSEQ1Q4L-9F1ff7vn"; // Replace with your Google Sheets ID
-const range = "Sheet1"; // Adjust if your sheet name is different
-
-// Load the Excel data from Google Sheets
-async function loadSheetData() {
+// Load the data from the local Excel file
+function loadExcelData() {
   try {
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range,
-    });
-    return response.data.values;
+    const workbook = xlsx.readFile(excelFilePath);
+    const sheetName = workbook.SheetNames[0]; // Get the first sheet
+    const worksheet = workbook.Sheets[sheetName];
+    const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 }); // Convert to array of arrays
+
+    return data;
   } catch (error) {
-    console.error("Error fetching the file from Google Sheets", error);
+    console.error("Error reading the Excel file", error);
     throw error;
   }
 }
 
 // Store the sheet data in a variable
 let sheetData = [];
-loadSheetData()
-  .then((data) => {
-    // Convert sheet data to JSON format if necessary
-    // For example, assuming the first row is headers
-    const headers = data[0];
-    sheetData = data.slice(1).map((row) => {
-      let obj = {};
-      headers.forEach((header, i) => {
-        obj[header] = row[i];
-      });
-      return obj;
+try {
+  const data = loadExcelData();
+  const headers = data[0];
+  sheetData = data.slice(1).map((row) => {
+    let obj = {};
+    headers.forEach((header, i) => {
+      obj[header] = row[i];
     });
-  })
-  .catch((error) => {
-    console.error("Error loading sheet data", error);
+    return obj;
   });
+} catch (error) {
+  console.error("Error loading sheet data", error);
+}
 
 // Render search page
 app.get("/", (req, res) => {
+  res.render("search");
+});
+app.get("/search", (req, res) => {
   res.render("search");
 });
 
@@ -70,7 +57,6 @@ app.post("/search", (req, res) => {
 
   try {
     const results = sheetData.filter((row) => {
-      // Extract the first and second keys (columns)
       const keys = Object.keys(row);
       if (keys.length < 2) return false; // Ensure there are at least two columns
 
