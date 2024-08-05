@@ -13,6 +13,11 @@
       line-height: 1.6;
       margin: 0;
       padding: 0;
+      background: #f4f4f4;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .container {
@@ -20,10 +25,14 @@
       margin: auto;
       overflow: hidden;
       padding: 20px;
+      background: #fff;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
 
     h1 {
       color: #333;
+      text-align: center;
     }
 
     .result-item {
@@ -36,6 +45,25 @@
 
     .result-item div {
       margin-bottom: 5px;
+    }
+
+    a {
+      display: inline-block;
+      padding: 10px 20px;
+      margin-bottom: 20px;
+      background: #007bff;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: 700;
+      text-align: center;
+      display: block;
+      width: max-content;
+      margin: 0 auto;
+    }
+
+    a:hover {
+      background: #0056b3;
     }
 
     footer {
@@ -52,6 +80,13 @@
       color: #fff;
       text-decoration: underline;
     }
+
+    .no-results {
+      text-align: center;
+      padding: 20px;
+      font-size: 1.2em;
+      color: #555;
+    }
   </style>
 </head>
 
@@ -59,24 +94,28 @@
   <div class="container">
     <h1>نتيجة البحث</h1>
     <a href="/">ابحث تاني</a>
-    <ul>
-      <% results.forEach(result=> { %>
-        <li class="result-item">
-          <div><strong>رقم الجلوس:</strong>
-            <%= result['رقم الجلوس'] %>
-          </div>
-          <div><strong>الاسم:</strong>
-            <%= result['الاسم'] %>
-          </div>
-          <div><strong>الدرجة:</strong>
-            <%= result['الدرجة'] %>
-          </div>
-          <div><strong>حالة الطالب:</strong>
-            <%= result['student_case_desc'] %>
-          </div>
-        </li>
-        <% }) %>
-    </ul>
+    <% if (results.length> 0) { %>
+      <ul>
+        <% results.forEach(result=> { %>
+          <li class="result-item">
+            <div><strong>رقم الجلوس:</strong>
+              <%= result['رقم الجلوس'] %>
+            </div>
+            <div><strong>الاسم:</strong>
+              <%= result['الاسم'] %>
+            </div>
+            <div><strong>الدرجة:</strong>
+              <%= result['الدرجة'] %>
+            </div>
+            <div><strong>حالة الطالب:</strong>
+              <%= result['student_case_desc'] %>
+            </div>
+          </li>
+          <% }) %>
+      </ul>
+      <% } else { %>
+        <div class="no-results">لا توجد نتائج مطابقة للبحث.</div>
+        <% } %>
   </div>
   <footer>
     &copy; 2024 <a href="https://www.facebook.com/profile.php?id=100071043262787">حسين ناصر</a>. غير مسوؤل عن صحة
