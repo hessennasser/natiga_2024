@@ -27,14 +27,16 @@ app.use(express.json());
 app.get("/search", async (req, res) => {
   const query = req.query.query || "";
   try {
-    // Read data from the Google Sheets
     const spreadsheetId = "1-mICanz5G0t1CziTSEQ1Q4L-9F1ff7vn"; // Your spreadsheet ID
     const range = "Sheet1!A:D"; // Adjust the range based on your sheet structure
 
+    // Read data from the Google Sheets
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
       range,
     });
+
+    console.log("Response data:", response.data); // Log response data for debugging
 
     const rows = response.data.values;
     if (!rows || !rows.length) {
@@ -50,7 +52,7 @@ app.get("/search", async (req, res) => {
     res.json(results);
   } catch (error) {
     console.error(
-      "Error searching for data:",
+      "Error details:",
       error.response ? error.response.data : error
     );
     res.status(500).send("خطأ في البحث عن البيانات");
