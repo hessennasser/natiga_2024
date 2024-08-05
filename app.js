@@ -25,11 +25,20 @@ app.post("/search", (req, res) => {
   const { query } = req.body;
 
   try {
-    const results = excelData.filter((row) =>
-      Object.values(row).some((value) =>
-        value.toString().toLowerCase().includes(query.toLowerCase())
-      )
-    );
+    const results = excelData.filter((row) => {
+      // Extract the first and second keys (columns)
+      const keys = Object.keys(row);
+      if (keys.length < 2) return false; // Ensure there are at least two columns
+
+      const firstField = row[keys[0]];
+      const secondField = row[keys[1]];
+
+      return (
+        firstField.toString().toLowerCase().includes(query.toLowerCase()) ||
+        secondField.toString().toLowerCase().includes(query.toLowerCase())
+      );
+    });
+
     res.render("results", { results });
   } catch (error) {
     console.error("Error querying the Excel file", error);

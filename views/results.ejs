@@ -1,28 +1,87 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="rtl">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Search Results</title>
+  <title>نتيجة البحث</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
+
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      width: 80%;
+      margin: auto;
+      overflow: hidden;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    .result-item {
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      background: #f9f9f9;
+    }
+
+    .result-item div {
+      margin-bottom: 5px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 10px;
+      background: #333;
+      color: #fff;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+    }
+
+    footer a {
+      color: #fff;
+      text-decoration: underline;
+    }
+  </style>
 </head>
 
 <body>
-  <h1>Search Results</h1>
-  <a href="/">Back to Search</a>
-  <ul>
-    <% results.forEach(result=> { %>
-      <li>
-        <% Object.entries(result).forEach(([key, value])=> { %>
-          <div><strong>
-              <%= key %>:
-            </strong>
-            <%= value %>
+  <div class="container">
+    <h1>نتيجة البحث</h1>
+    <a href="/">ابحث تاني</a>
+    <ul>
+      <% results.forEach(result=> { %>
+        <li class="result-item">
+          <div><strong>رقم الجلوس:</strong>
+            <%= result['رقم الجلوس'] %>
           </div>
-          <% }) %>
-      </li>
-      <% }) %>
-  </ul>
+          <div><strong>الاسم:</strong>
+            <%= result['الاسم'] %>
+          </div>
+          <div><strong>الدرجة:</strong>
+            <%= result['الدرجة'] %>
+          </div>
+          <div><strong>حالة الطالب:</strong>
+            <%= result['student_case_desc'] %>
+          </div>
+        </li>
+        <% }) %>
+    </ul>
+  </div>
+  <footer>
+    &copy; 2024 <a href="https://www.facebook.com/profile.php?id=100071043262787">حسين ناصر</a>. غير مسوؤل عن صحة
+    النتيجه.
+  </footer>
 </body>
 
 </html>
