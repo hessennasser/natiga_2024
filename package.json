@@ -12,6 +12,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "ejs": "^3.1.10",
+    "exceljs": "^4.4.0",
     "express": "^4.19.2",
     "googleapis": "^140.0.1",
     "xlsx": "^0.18.5"

@@ -1,7 +1,7 @@
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
-const xlsx = require("xlsx");
+const ExcelJS = require("exceljs");
 
 const app = express();
 app.set("view engine", "ejs");
@@ -12,15 +12,21 @@ app.use(express.json());
 // Path to the local Excel file
 const excelFilePath = path.join(__dirname, "data.xlsx");
 
-// Load the data from the local Excel file
-function loadSheetData() {
+// Load the data from the local Excel file (streaming approach)
+async function loadSheetData() {
   try {
-    const workbook = xlsx.readFile(excelFilePath, { cellStyles: true });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(excelFilePath);
+    const sheet = workbook.worksheets[0];
 
-    // Using streaming approach if the library supports it
-    const data = xlsx.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+    const data = [];
+    sheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) {
+        data.push(row.values.slice(1)); // First row as header
+      } else {
+        data.push(row.values.slice(1));
+      }
+    });
 
     return data;
   } catch (error) {
@@ -31,25 +37,24 @@ function loadSheetData() {
 
 // Store the sheet data in a variable
 let sheetData = [];
-try {
-  const data = loadSheetData();
-  const headers = data[0];
-  sheetData = data.slice(1).map((row) => {
-    let obj = {};
-    headers.forEach((header, i) => {
-      obj[header] = row[i];
+(async () => {
+  try {
+    const data = await loadSheetData();
+    const headers = data[0];
+    sheetData = data.slice(1).map((row) => {
+      let obj = {};
+      headers.forEach((header, i) => {
+        obj[header] = row[i] || "";
+      });
+      return obj;
     });
-    return obj;
-  });
-} catch (error) {
-  console.error("Error loading sheet data", error);
-}
+  } catch (error) {
+    console.error("Error loading sheet data", error);
+  }
+})();
 
 // Render search page
 app.get("/", (req, res) => {
-  res.render("search");
-});
-app.get("/search", (req, res) => {
   res.render("search");
 });
 
@@ -78,7 +83,7 @@ app.post("/search", (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
