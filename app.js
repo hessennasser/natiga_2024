@@ -13,12 +13,14 @@ app.use(express.json());
 const excelFilePath = path.join(__dirname, "data.xlsx");
 
 // Load the data from the local Excel file
-function loadExcelData() {
+function loadSheetData() {
   try {
-    const workbook = xlsx.readFile(excelFilePath);
-    const sheetName = workbook.SheetNames[0]; // Get the first sheet
+    const workbook = xlsx.readFile(excelFilePath, { cellStyles: true });
+    const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 }); // Convert to array of arrays
+
+    // Using streaming approach if the library supports it
+    const data = xlsx.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
 
     return data;
   } catch (error) {
@@ -30,7 +32,7 @@ function loadExcelData() {
 // Store the sheet data in a variable
 let sheetData = [];
 try {
-  const data = loadExcelData();
+  const data = loadSheetData();
   const headers = data[0];
   sheetData = data.slice(1).map((row) => {
     let obj = {};
