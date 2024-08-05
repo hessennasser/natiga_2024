@@ -1,9 +1,7 @@
 const express = require("express");
 const { google } = require("googleapis");
-const xlsx = require("xlsx");
 const path = require("path");
 const fs = require("fs");
-const stream = require("stream");
 
 const app = express();
 app.set("view engine", "ejs");
@@ -19,51 +17,46 @@ const auth = new google.auth.JWT(
   credentials.client_email,
   null,
   credentials.private_key,
-  ["https://www.googleapis.com/auth/drive.readonly"]
+  ["https://www.googleapis.com/auth/spreadsheets.readonly"]
 );
 
-const drive = google.drive({ version: "v3", auth });
+const sheets = google.sheets({ version: "v4", auth });
 
-// Load the Excel file from Google Drive
-async function loadExcelFile(fileId) {
+// Your Google Sheets file ID and range
+const spreadsheetId = "1-mICanz5G0t1CziTSEQ1Q4L-9F1ff7vn"; // Replace with your Google Sheets ID
+const range = "Sheet1"; // Adjust if your sheet name is different
+
+// Load the Excel data from Google Sheets
+async function loadSheetData() {
   try {
-    const response = await drive.files.get(
-      { fileId, alt: "media" },
-      { responseType: "stream" }
-    );
-
-    return new Promise((resolve, reject) => {
-      const chunks = [];
-      response.data
-        .on("data", (chunk) => chunks.push(chunk))
-        .on("end", () => {
-          const buffer = Buffer.concat(chunks);
-          const workbook = xlsx.read(buffer);
-          const sheetName = workbook.SheetNames[0];
-          const sheet = workbook.Sheets[sheetName];
-          const excelData = xlsx.utils.sheet_to_json(sheet);
-          resolve(excelData);
-        })
-        .on("error", reject);
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range,
     });
+    return response.data.values;
   } catch (error) {
-    console.error("Error fetching the file from Google Drive", error);
+    console.error("Error fetching the file from Google Sheets", error);
     throw error;
   }
 }
 
-// Store the Excel data in a variable
-let excelData = [];
-const fileId = "your_google_drive_file_id"; // Replace with your Google Drive file ID
-
-// Load the data when the server starts
-loadExcelFile(fileId)
+// Store the sheet data in a variable
+let sheetData = [];
+loadSheetData()
   .then((data) => {
-    excelData = data;
-    console.log("Excel data loaded successfully.");
+    // Convert sheet data to JSON format if necessary
+    // For example, assuming the first row is headers
+    const headers = data[0];
+    sheetData = data.slice(1).map((row) => {
+      let obj = {};
+      headers.forEach((header, i) => {
+        obj[header] = row[i];
+      });
+      return obj;
+    });
   })
   .catch((error) => {
-    console.error("Failed to load Excel data:", error);
+    console.error("Error loading sheet data", error);
   });
 
 // Render search page
@@ -76,7 +69,7 @@ app.post("/search", (req, res) => {
   const { query } = req.body;
 
   try {
-    const results = excelData.filter((row) => {
+    const results = sheetData.filter((row) => {
       // Extract the first and second keys (columns)
       const keys = Object.keys(row);
       if (keys.length < 2) return false; // Ensure there are at least two columns
@@ -92,8 +85,8 @@ app.post("/search", (req, res) => {
 
     res.render("results", { results });
   } catch (error) {
-    console.error("Error querying the Excel file", error);
-    res.status(500).send("Error querying the Excel file");
+    console.error("Error querying the sheet data", error);
+    res.status(500).send("Error querying the sheet data");
   }
 });
 
