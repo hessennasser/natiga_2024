@@ -1,71 +1,103 @@
+const express = require("express");
 const { google } = require("googleapis");
+const xlsx = require("xlsx");
 const path = require("path");
 const fs = require("fs");
-const express = require("express");
-const app = express();
+const stream = require("stream");
 
-// Load client secrets from a local file
+const app = express();
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+// Google Drive API configuration
 const credentials = JSON.parse(
   fs.readFileSync(path.join(__dirname, "service_account.json"))
 );
-
-// Configure JWT client for service account
 const auth = new google.auth.JWT(
   credentials.client_email,
   null,
   credentials.private_key,
-  ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+  ["https://www.googleapis.com/auth/drive.readonly"]
 );
 
-const sheets = google.sheets({ version: "v4", auth });
+const drive = google.drive({ version: "v3", auth });
 
-// Set up Express
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+// Load the Excel file from Google Drive
+async function loadExcelFile(fileId) {
+  try {
+    const response = await drive.files.get(
+      { fileId, alt: "media" },
+      { responseType: "stream" }
+    );
+
+    return new Promise((resolve, reject) => {
+      const chunks = [];
+      response.data
+        .on("data", (chunk) => chunks.push(chunk))
+        .on("end", () => {
+          const buffer = Buffer.concat(chunks);
+          const workbook = xlsx.read(buffer);
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const excelData = xlsx.utils.sheet_to_json(sheet);
+          resolve(excelData);
+        })
+        .on("error", reject);
+    });
+  } catch (error) {
+    console.error("Error fetching the file from Google Drive", error);
+    throw error;
+  }
+}
+
+// Store the Excel data in a variable
+let excelData = [];
+const fileId = "your_google_drive_file_id"; // Replace with your Google Drive file ID
+
+// Load the data when the server starts
+loadExcelFile(fileId)
+  .then((data) => {
+    excelData = data;
+    console.log("Excel data loaded successfully.");
+  })
+  .catch((error) => {
+    console.error("Failed to load Excel data:", error);
+  });
 
 // Render search page
 app.get("/", (req, res) => {
   res.render("search");
 });
 
-// Search route
-app.get("/search", async (req, res) => {
-  const query = req.query.query || "";
-  try {
-    const spreadsheetId = "1-mICanz5G0t1CziTSEQ1Q4L-9F1ff7vn"; // Your spreadsheet ID
-    const range = "Sheet1!A:D"; // Adjust the range based on your sheet structure
+// Handle search requests
+app.post("/search", (req, res) => {
+  const { query } = req.body;
 
-    // Read data from the Google Sheets
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range,
+  try {
+    const results = excelData.filter((row) => {
+      // Extract the first and second keys (columns)
+      const keys = Object.keys(row);
+      if (keys.length < 2) return false; // Ensure there are at least two columns
+
+      const firstField = row[keys[0]];
+      const secondField = row[keys[1]];
+
+      return (
+        firstField.toString().toLowerCase().includes(query.toLowerCase()) ||
+        secondField.toString().toLowerCase().includes(query.toLowerCase())
+      );
     });
 
-    console.log("Response data:", response.data); // Log response data for debugging
-
-    const rows = response.data.values;
-    if (!rows || !rows.length) {
-      res.send("لا توجد بيانات.");
-      return;
-    }
-
-    // Filter rows based on query
-    const results = rows.filter((row) =>
-      row.some((cell) => cell.toLowerCase().includes(query.toLowerCase()))
-    );
-
-    res.json(results);
+    res.render("results", { results });
   } catch (error) {
-    console.error(
-      "Error details:",
-      error.response ? error.response.data : error
-    );
-    res.status(500).send("خطأ في البحث عن البيانات");
+    console.error("Error querying the Excel file", error);
+    res.status(500).send("Error querying the Excel file");
   }
 });
 
-// Start Express server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server started on http://localhost:${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
